@@ -1,7 +1,38 @@
 // ============================================
 // CUSTOM A-FRAME COMPONENTS
-// Circle of Cats - Interaction System
+// Circle of Cats - Interaction System (FIXED)
 // ============================================
+
+// ============================================
+// 0. CAT MODEL LOADER (with fallback)
+// Replaces placeholder boxes with GLB models when loaded
+// ============================================
+AFRAME.registerComponent('cat-model', {
+  schema: {
+    src: { type: 'selector', default: null }
+  },
+
+  init: function() {
+    if (!this.data.src) return;
+
+    // Try to load GLB model
+    const modelSrc = this.data.src.getAttribute('src');
+    
+    // Check if asset loaded successfully
+    this.data.src.addEventListener('loaded', () => {
+      console.log('✅ Model loaded:', modelSrc);
+      // Replace placeholder with actual model
+      this.el.setAttribute('gltf-model', `#${this.data.src.id}`);
+      this.el.removeAttribute('geometry');
+      this.el.removeAttribute('material');
+    });
+
+    this.data.src.addEventListener('error', () => {
+      console.warn('⚠️ Model failed, using placeholder:', modelSrc);
+      // Keep the placeholder box visible
+    });
+  }
+});
 
 // ============================================
 // 1. PROXIMITY ZONE COMPONENT
@@ -10,26 +41,29 @@
 AFRAME.registerComponent('proximity-zone', {
   schema: {
     catId: { type: 'string', default: '' },
-    radius: { type: 'number', default: 1.4 }
+    radius: { type: 'number', default: 1.5 },
+    stationNum: { type: 'string', default: '01' }
   },
 
   init: function() {
     this.camera = null;
     this.isInZone = false;
     this.checkInterval = null;
-    
+
     // Wait for scene to load
     this.el.sceneEl.addEventListener('loaded', () => {
       this.camera = document.querySelector('[camera]');
-      this.startChecking();
+      if (this.camera) {
+        this.startChecking();
+      }
     });
   },
 
   startChecking: function() {
-    // Check proximity every 100ms
+    // Check proximity every 150ms (less intensive)
     this.checkInterval = setInterval(() => {
       this.checkProximity();
-    }, 100);
+    }, 150);
   },
 
   checkProximity: function() {
@@ -51,45 +85,53 @@ AFRAME.registerComponent('proximity-zone', {
   },
 
   onEnterZone: function() {
-    console.log('Entered zone:', this.data.catId);
-    
+    console.log('🐱 Entered zone:', this.data.catId);
+
     // Show hint UI
     this.showHint();
-    
+
     // Enable interaction
-    this.camera.setAttribute('interaction-controller', 'activeZone', this.el);
-    
+    const controller = this.camera.components['interaction-controller'];
+    if (controller) {
+      controller.setActiveZone(this.el, this.data.stationNum);
+    }
+
     // Emit event
     this.el.emit('zone-entered', { catId: this.data.catId });
   },
 
   onLeaveZone: function() {
-    console.log('Left zone:', this.data.catId);
-    
+    console.log('👋 Left zone:', this.data.catId);
+
     // Hide hint UI
     this.hideHint();
-    
+
     // Disable interaction
-    this.camera.setAttribute('interaction-controller', 'activeZone', null);
-    
+    const controller = this.camera.components['interaction-controller'];
+    if (controller) {
+      controller.clearActiveZone();
+    }
+
     // Emit event
     this.el.emit('zone-left', { catId: this.data.catId });
   },
 
   showHint: function() {
     const hint = document.getElementById('hint-ui');
-    if (hint) {
-      // Position hint above the pedestal
-      const zonePos = this.el.object3D.getWorldPosition(new THREE.Vector3());
-      hint.setAttribute('position', {
-        x: zonePos.x,
-        y: zonePos.y + 2,
-        z: zonePos.z
-      });
-      hint.setAttribute('visible', true);
-      
-      // Make hint face camera
-      hint.object3D.lookAt(this.camera.object3D.position);
+    if (!hint) return;
+
+    const zonePos = this.el.object3D.getWorldPosition(new THREE.Vector3());
+    hint.setAttribute('position', {
+      x: zonePos.x,
+      y: zonePos.y + 2.2,
+      z: zonePos.z
+    });
+    hint.setAttribute('visible', true);
+
+    // Make hint face camera
+    if (this.camera) {
+      const cameraPos = this.camera.object3D.position;
+      hint.object3D.lookAt(cameraPos);
     }
   },
 
@@ -112,19 +154,30 @@ AFRAME.registerComponent('proximity-zone', {
 // Handles click and E key input
 // ============================================
 AFRAME.registerComponent('interaction-controller', {
-  schema: {
-    activeZone: { type: 'selector', default: null }
-  },
-
   init: function() {
+    this.activeZone = null;
+    this.activeStationNum = null;
+    
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onClick = this.onClick.bind(this);
-    
+
     // Listen for E key
     window.addEventListener('keydown', this.onKeyDown);
-    
+
     // Listen for mouse click
     window.addEventListener('click', this.onClick);
+
+    console.log('🎮 Interaction controller initialized');
+  },
+
+  setActiveZone: function(zone, stationNum) {
+    this.activeZone = zone;
+    this.activeStationNum = stationNum;
+  },
+
+  clearActiveZone: function() {
+    this.activeZone = null;
+    this.activeStationNum = null;
   },
 
   onKeyDown: function(event) {
@@ -135,36 +188,31 @@ AFRAME.registerComponent('interaction-controller', {
   },
 
   onClick: function(event) {
-    // Only trigger if pointer is locked (user is in game mode)
-    if (document.pointerLockElement) {
-      this.triggerInteraction();
-    }
+    // Trigger interaction on any click when in game mode
+    this.triggerInteraction();
   },
 
   triggerInteraction: function() {
-    const activeZone = this.data.activeZone;
-    
-    if (activeZone) {
-      const catId = activeZone.getAttribute('proximity-zone').catId;
-      console.log('Petting cat:', catId);
-      
-      // Trigger sparkle effect
-      this.activateSparkles(catId);
-      
-      // Emit interaction event
-      activeZone.emit('cat-petted', { catId: catId });
-    }
+    if (!this.activeZone || !this.activeStationNum) return;
+
+    const catId = this.activeZone.getAttribute('proximity-zone').catId;
+    console.log('✨ Petting cat:', catId);
+
+    // Trigger sparkle effect
+    this.activateSparkles(this.activeStationNum);
+
+    // Emit interaction event
+    this.activeZone.emit('cat-petted', { catId: catId });
   },
 
-  activateSparkles: function(catId) {
-    // Extract cat number from ID (e.g., "cat-01" -> "01")
-    const catNumber = catId.split('-')[1];
-    const sparklesId = `sparkles-${catNumber}`;
+  activateSparkles: function(stationNum) {
+    const sparklesId = `sparkles-${stationNum}`;
     const sparklesEl = document.getElementById(sparklesId);
-    
+
     if (sparklesEl) {
-      // Trigger sparkle burst
       sparklesEl.emit('sparkle-burst');
+    } else {
+      console.warn('Sparkles not found:', sparklesId);
     }
   },
 
@@ -187,48 +235,21 @@ AFRAME.registerComponent('sparkle-effect', {
 
   triggerBurst: function() {
     const particleSystem = this.el.components['particle-system'];
-    
+
     if (particleSystem) {
-      // Enable particle system
-      particleSystem.el.setAttribute('particle-system', 'enabled', true);
+      console.log('✨ Sparkle burst!');
       
+      // Enable particle system
+      this.el.setAttribute('particle-system', 'enabled', true);
+
       // Disable after 1 second
       setTimeout(() => {
-        particleSystem.el.setAttribute('particle-system', 'enabled', false);
+        this.el.setAttribute('particle-system', 'enabled', false);
       }, 1000);
+    } else {
+      console.warn('Particle system not found');
     }
   }
 });
 
-// ============================================
-// 4. GRADIENT SKY SHADER (Optional Enhancement)
-// Custom shader for smoother radial background
-// ============================================
-AFRAME.registerShader('gradient', {
-  schema: {
-    topColor: { type: 'color', default: '#1a1a2e', is: 'uniform' },
-    bottomColor: { type: 'color', default: '#0a0a14', is: 'uniform' }
-  },
-
-  vertexShader: `
-    varying vec3 vWorldPosition;
-    void main() {
-      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-      vWorldPosition = worldPosition.xyz;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-
-  fragmentShader: `
-    uniform vec3 topColor;
-    uniform vec3 bottomColor;
-    varying vec3 vWorldPosition;
-    
-    void main() {
-      float h = normalize(vWorldPosition).y;
-      gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), 0.8), 0.0)), 1.0);
-    }
-  `
-});
-
-console.log('✨ Circle of Cats - Interaction System Loaded');
+console.log('✅ Circle of Cats - Interaction System Loaded');

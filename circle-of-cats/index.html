@@ -3,314 +3,168 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Circle of Cats - WebXR Gallery</title>
-  <link rel="stylesheet" href="style.css">
-
-  <!-- A-Frame Core (Latest Stable) -->
+  <title>Circle of Cats - Minimal Test</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #info {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      color: white;
+      font-family: monospace;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 100;
+    }
+  </style>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  
-  <!-- Particle System Component (FIXED VERSION) -->
-  <script src="https://cdn.jsdelivr.net/gh/IdeaSpaceVR/aframe-particle-system-component@master/dist/aframe-particle-system-component.min.js"></script>
 </head>
 <body>
 
-  <!-- Loading Screen -->
-  <div id="loading-screen">
-    <div class="loader"></div>
-    <p>Loading Circle of Cats...</p>
+  <!-- Info Overlay -->
+  <div id="info">
+    <strong>Circle of Cats - Test v1.0</strong><br>
+    WASD: Move | Mouse: Look<br>
+    ESC: Release cursor
   </div>
 
   <!-- A-Frame Scene -->
-  <a-scene 
-    loading-screen="enabled: false"
-    fog="type: exponential; color: #1a1a2e; density: 0.05"
-    renderer="antialias: true; colorManagement: true; sortObjects: true; physicallyCorrectLights: false;">
-
-    <!-- Asset Management System -->
-    <a-assets timeout="10000">
-      <!-- Cat Models (with error handling) -->
-      <a-asset-item id="cat1" src="assets/models/cat_01.glb" response-type="arraybuffer"></a-asset-item>
-      <a-asset-item id="cat2" src="assets/models/cat_02.glb" response-type="arraybuffer"></a-asset-item>
-      <a-asset-item id="cat3" src="assets/models/cat_03.glb" response-type="arraybuffer"></a-asset-item>
-      <a-asset-item id="cat4" src="assets/models/cat_04.glb" response-type="arraybuffer"></a-asset-item>
-      <a-asset-item id="cat5" src="assets/models/cat_05.glb" response-type="arraybuffer"></a-asset-item>
-    </a-assets>
-
-    <!-- ============================================ -->
-    <!-- CAMERA RIG (WASD Movement) -->
-    <!-- ============================================ -->
-    <a-entity id="camera-rig" position="0 0 5">
+  <a-scene>
+    
+    <!-- Camera -->
+    <a-entity id="rig" position="0 0 5">
       <a-camera 
-        position="0 1.6 0"
-        look-controls="pointerLockEnabled: true"
-        wasd-controls="acceleration: 50"
-        interaction-controller>
+        position="0 1.6 0" 
+        look-controls 
+        wasd-controls="acceleration: 65">
       </a-camera>
     </a-entity>
 
-    <!-- ============================================ -->
-    <!-- LIGHTING SYSTEM -->
-    <!-- ============================================ -->
+    <!-- Sky (bright blue for testing) -->
+    <a-sky color="#87CEEB"></a-sky>
 
-    <!-- Ambient Light (low) -->
-    <a-light type="ambient" color="#2a2a4a" intensity="0.4"></a-light>
+    <!-- Ground (green plane) -->
+    <a-plane 
+      position="0 0 0" 
+      rotation="-90 0 0" 
+      width="20" 
+      height="20" 
+      color="#90EE90">
+    </a-plane>
 
-    <!-- Directional Light (soft fill) -->
-    <a-light type="directional" color="#ffffff" intensity="0.5" position="5 10 5"></a-light>
+    <!-- Strong ambient light -->
+    <a-light type="ambient" intensity="0.8"></a-light>
+    
+    <!-- Directional light -->
+    <a-light type="directional" position="2 4 2" intensity="0.5"></a-light>
 
-    <!-- Spotlights for Each Pedestal -->
-    <a-light type="spot" position="-4.33 5 -2.5" intensity="1.5" angle="60" penumbra="0.5" color="#ffe4b5" target="#pedestal-01"></a-light>
-    <a-light type="spot" position="-2.6 5 -4.5" intensity="1.5" angle="60" penumbra="0.5" color="#ffe4b5" target="#pedestal-02"></a-light>
-    <a-light type="spot" position="0 5 -5" intensity="1.5" angle="60" penumbra="0.5" color="#ffe4b5" target="#pedestal-03"></a-light>
-    <a-light type="spot" position="2.6 5 -4.5" intensity="1.5" angle="60" penumbra="0.5" color="#ffe4b5" target="#pedestal-04"></a-light>
-    <a-light type="spot" position="4.33 5 -2.5" intensity="1.5" angle="60" penumbra="0.5" color="#ffe4b5" target="#pedestal-05"></a-light>
-
-    <!-- ============================================ -->
-    <!-- BACKGROUND (Radial Glow Sky) -->
-    <!-- ============================================ -->
-    <a-sky color="#0f0f1e" material="shader: flat; color: #0f0f1e"></a-sky>
-
-    <!-- Background Glow Sphere (inverted) -->
-    <a-sphere 
-      radius="50"
-      scale="-1 1 1"
-      material="shader: flat; color: #1a1a2e; opacity: 0.6; side: back; transparent: true">
-    </a-sphere>
-
-    <!-- ============================================ -->
-    <!-- MAIN PLATFORM -->
-    <!-- ============================================ -->
+    <!-- CENTER: Main platform (large dark circle) -->
     <a-cylinder 
-      id="main-platform"
-      position="0 -0.1 -2"
-      radius="10"
-      height="0.2"
-      material="color: #2a2a3e; roughness: 0.9; metalness: 0.1">
+      position="0 0.1 -2" 
+      radius="8" 
+      height="0.2" 
+      color="#2a2a3e">
     </a-cylinder>
 
-    <!-- ============================================ -->
-    <!-- PEDESTALS + CATS (Semi-Circle Layout) -->
-    <!-- ============================================ -->
+    <!-- 5 PEDESTALS IN SEMI-CIRCLE -->
+    
+    <!-- Pedestal 1 (Left) -->
+    <a-cylinder 
+      position="-4.33 0.6 -2.5" 
+      radius="0.5" 
+      height="1.2" 
+      color="#666666">
+    </a-cylinder>
+    <!-- Cat placeholder 1 (red box) -->
+    <a-box 
+      position="-4.33 1.5 -2.5" 
+      width="0.6" 
+      height="0.6" 
+      depth="0.6" 
+      color="#FF6B6B">
+    </a-box>
 
-    <!-- PEDESTAL 1 (Left -60°) -->
-    <a-entity id="station-01" position="-4.33 0 -2.5">
-      <a-cylinder 
-        id="pedestal-01"
-        radius="0.6"
-        height="1.2"
-        material="color: #3a3a4e; roughness: 0.8; metalness: 0.2">
-      </a-cylinder>
+    <!-- Pedestal 2 -->
+    <a-cylinder 
+      position="-2.6 0.6 -4.5" 
+      radius="0.5" 
+      height="1.2" 
+      color="#666666">
+    </a-cylinder>
+    <!-- Cat placeholder 2 (orange) -->
+    <a-box 
+      position="-2.6 1.5 -4.5" 
+      width="0.6" 
+      height="0.6" 
+      depth="0.6" 
+      color="#FFA500">
+    </a-box>
 
-      <!-- Cat Model (with fallback) -->
-      <a-box 
-        id="cat-01"
-        position="0 1.5 0"
-        width="0.5" height="0.6" depth="0.5"
-        material="color: #ff9999; roughness: 0.7"
-        rotation="0 -30 0"
-        cat-model="src: #cat1">
-      </a-box>
+    <!-- Pedestal 3 (Center) -->
+    <a-cylinder 
+      position="0 0.6 -5" 
+      radius="0.5" 
+      height="1.2" 
+      color="#666666">
+    </a-cylinder>
+    <!-- Cat placeholder 3 (yellow) -->
+    <a-box 
+      position="0 1.5 -5" 
+      width="0.6" 
+      height="0.6" 
+      depth="0.6" 
+      color="#FFD700">
+    </a-box>
 
-      <!-- Interaction Zone -->
-      <a-entity 
-        proximity-zone="catId: cat-01; radius: 1.5; stationNum: 01"
-        position="0 0.6 0">
-      </a-entity>
+    <!-- Pedestal 4 -->
+    <a-cylinder 
+      position="2.6 0.6 -4.5" 
+      radius="0.5" 
+      height="1.2" 
+      color="#666666">
+    </a-cylinder>
+    <!-- Cat placeholder 4 (green) -->
+    <a-box 
+      position="2.6 1.5 -4.5" 
+      width="0.6" 
+      height="0.6" 
+      depth="0.6" 
+      color="#4ECDC4">
+    </a-box>
 
-      <!-- Sparkle Effect -->
-      <a-entity 
-        id="sparkles-01"
-        position="0 1.8 0"
-        particle-system="preset: default; color: #FFD700,#FFA500,#FFFFFF; particleCount: 20; maxAge: 0.8; size: 0.2; enabled: false"
-        sparkle-effect>
-      </a-entity>
-    </a-entity>
+    <!-- Pedestal 5 (Right) -->
+    <a-cylinder 
+      position="4.33 0.6 -2.5" 
+      radius="0.5" 
+      height="1.2" 
+      color="#666666">
+    </a-cylinder>
+    <!-- Cat placeholder 5 (purple) -->
+    <a-box 
+      position="4.33 1.5 -2.5" 
+      width="0.6" 
+      height="0.6" 
+      depth="0.6" 
+      color="#9B59B6">
+    </a-box>
 
-    <!-- PEDESTAL 2 (Left -30°) -->
-    <a-entity id="station-02" position="-2.6 0 -4.5">
-      <a-cylinder 
-        id="pedestal-02"
-        radius="0.6"
-        height="1.2"
-        material="color: #3a3a4e; roughness: 0.8; metalness: 0.2">
-      </a-cylinder>
-
-      <a-box 
-        id="cat-02"
-        position="0 1.5 0"
-        width="0.5" height="0.6" depth="0.5"
-        material="color: #ffcc99; roughness: 0.7"
-        rotation="0 -15 0"
-        cat-model="src: #cat2">
-      </a-box>
-
-      <a-entity 
-        proximity-zone="catId: cat-02; radius: 1.5; stationNum: 02"
-        position="0 0.6 0">
-      </a-entity>
-
-      <a-entity 
-        id="sparkles-02"
-        position="0 1.8 0"
-        particle-system="preset: default; color: #FFD700,#FFA500,#FFFFFF; particleCount: 20; maxAge: 0.8; size: 0.2; enabled: false"
-        sparkle-effect>
-      </a-entity>
-    </a-entity>
-
-    <!-- PEDESTAL 3 (Center 0°) -->
-    <a-entity id="station-03" position="0 0 -5">
-      <a-cylinder 
-        id="pedestal-03"
-        radius="0.6"
-        height="1.2"
-        material="color: #3a3a4e; roughness: 0.8; metalness: 0.2">
-      </a-cylinder>
-
-      <a-box 
-        id="cat-03"
-        position="0 1.5 0"
-        width="0.5" height="0.6" depth="0.5"
-        material="color: #99ccff; roughness: 0.7"
-        rotation="0 0 0"
-        cat-model="src: #cat3">
-      </a-box>
-
-      <a-entity 
-        proximity-zone="catId: cat-03; radius: 1.5; stationNum: 03"
-        position="0 0.6 0">
-      </a-entity>
-
-      <a-entity 
-        id="sparkles-03"
-        position="0 1.8 0"
-        particle-system="preset: default; color: #FFD700,#FFA500,#FFFFFF; particleCount: 20; maxAge: 0.8; size: 0.2; enabled: false"
-        sparkle-effect>
-      </a-entity>
-    </a-entity>
-
-    <!-- PEDESTAL 4 (Right +30°) -->
-    <a-entity id="station-04" position="2.6 0 -4.5">
-      <a-cylinder 
-        id="pedestal-04"
-        radius="0.6"
-        height="1.2"
-        material="color: #3a3a4e; roughness: 0.8; metalness: 0.2">
-      </a-cylinder>
-
-      <a-box 
-        id="cat-04"
-        position="0 1.5 0"
-        width="0.5" height="0.6" depth="0.5"
-        material="color: #cccccc; roughness: 0.7"
-        rotation="0 15 0"
-        cat-model="src: #cat4">
-      </a-box>
-
-      <a-entity 
-        proximity-zone="catId: cat-04; radius: 1.5; stationNum: 04"
-        position="0 0.6 0">
-      </a-entity>
-
-      <a-entity 
-        id="sparkles-04"
-        position="0 1.8 0"
-        particle-system="preset: default; color: #FFD700,#FFA500,#FFFFFF; particleCount: 20; maxAge: 0.8; size: 0.2; enabled: false"
-        sparkle-effect>
-      </a-entity>
-    </a-entity>
-
-    <!-- PEDESTAL 5 (Right +60°) -->
-    <a-entity id="station-05" position="4.33 0 -2.5">
-      <a-cylinder 
-        id="pedestal-05"
-        radius="0.6"
-        height="1.2"
-        material="color: #3a3a4e; roughness: 0.8; metalness: 0.2">
-      </a-cylinder>
-
-      <a-box 
-        id="cat-05"
-        position="0 1.5 0"
-        width="0.5" height="0.6" depth="0.5"
-        material="color: #333333; roughness: 0.7"
-        rotation="0 30 0"
-        cat-model="src: #cat5">
-      </a-box>
-
-      <a-entity 
-        proximity-zone="catId: cat-05; radius: 1.5; stationNum: 05"
-        position="0 0.6 0">
-      </a-entity>
-
-      <a-entity 
-        id="sparkles-05"
-        position="0 1.8 0"
-        particle-system="preset: default; color: #FFD700,#FFA500,#FFFFFF; particleCount: 20; maxAge: 0.8; size: 0.2; enabled: false"
-        sparkle-effect>
-      </a-entity>
-    </a-entity>
-
-    <!-- ============================================ -->
-    <!-- UI HINT SYSTEM -->
-    <!-- ============================================ -->
-    <a-entity id="hint-ui" position="0 0 -2" visible="false">
-      <a-plane 
-        width="2.5"
-        height="0.6"
-        material="color: #1a1a2e; opacity: 0.85; transparent: true">
-      </a-plane>
-      <a-text 
-        value="Press E or Click to Pet"
-        align="center"
-        width="3.5"
-        position="0 0 0.01"
-        color="#ffffff">
-      </a-text>
-    </a-entity>
+    <!-- Reference cube (to test if ANYTHING renders) -->
+    <a-box 
+      position="0 1 -3" 
+      color="#FF0000" 
+      width="0.5" 
+      height="0.5" 
+      depth="0.5">
+    </a-box>
 
   </a-scene>
 
-  <!-- Custom Interaction Components -->
-  <script src="js/interactions.js"></script>
-
-  <!-- Loading Screen Controller with Error Handling -->
   <script>
-    // Loading screen management
-    const loadingScreen = document.getElementById('loading-screen');
-    const scene = document.querySelector('a-scene');
-
-    // Force hide loading screen after 5 seconds (fallback)
-    const forceHideTimeout = setTimeout(() => {
-      console.log('Force hiding loading screen');
-      hideLoadingScreen();
-    }, 5000);
-
-    // Hide when scene loads
-    if (scene) {
-      scene.addEventListener('loaded', function() {
-        clearTimeout(forceHideTimeout);
-        console.log('✅ Scene loaded successfully');
-        hideLoadingScreen();
-      });
-
-      // Log asset errors
-      scene.addEventListener('error', function(evt) {
-        console.error('Scene error:', evt);
-      });
-    }
-
-    function hideLoadingScreen() {
-      loadingScreen.style.opacity = '0';
-      setTimeout(() => {
-        loadingScreen.style.display = 'none';
-      }, 500);
-    }
-
-    // Log when assets fail
-    document.querySelectorAll('a-asset-item').forEach(asset => {
-      asset.addEventListener('error', (e) => {
-        console.warn(`⚠️ Failed to load: ${asset.getAttribute('src')}`);
-      });
+    // Debug: Log when scene loads
+    document.querySelector('a-scene').addEventListener('loaded', function() {
+      console.log('✅ Scene loaded successfully');
+      console.log('📍 Camera position:', document.querySelector('[camera]').getAttribute('position'));
     });
   </script>
 

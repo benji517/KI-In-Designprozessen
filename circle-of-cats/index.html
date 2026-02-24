@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Circle of Cats - v4 Models + Sound</title>
+  
+  <!-- Favicon (prevents 404 error) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>">
+  
   <style>
     body { margin: 0; overflow: hidden; }
     #info {
@@ -92,7 +96,7 @@
 <body>
 
 <div id="info">
-    <strong>Circle of Cats - v4 (Models + Sound)</strong><br>
+    <strong>Circle of Cats - v4 MVP</strong><br>
     WASD: Move | Mouse: Look<br>
     Walk near a cat to interact
   </div>
@@ -180,16 +184,13 @@
 
 <!-- ============================================ -->
     <!-- STATIONS WITH CAT MODELS -->
-    <!-- (Pedestals 5% taller: 1.2 → 1.26) -->
-    <!-- (Cats back at y=1.3, facing user) -->
     <!-- ============================================ -->
 
 <!-- STATION 1 (Left -60°) -->
     <a-entity id="station-01" position="-4.33 0 -2.5">
-      <!-- Taller pedestal -->
       <a-cylinder 
         radius="0.55" 
-        height="1.37" 
+        height="1.26" 
         color="#2a2a3e"
         material="roughness: 0.9; metalness: 0.1">
       </a-cylinder>
@@ -211,7 +212,7 @@
         scale="0.8 0.8 0.8"
         cat-model="modelId: #model-cat-01; fallbackColor: #ff8566"
         cat-glow="originalColor: #ff8566"
-        cat-sound="soundId: #sound-cat-01">
+        cat-sound="soundId: #sound-cat-01; volume: 0.5">
       </a-entity>
 
 <a-entity 
@@ -224,7 +225,7 @@
     <a-entity id="station-02" position="-2.6 0 -4.5">
       <a-cylinder 
         radius="0.55" 
-        height="1.37" 
+        height="1.26" 
         color="#2a2a3e"
         material="roughness: 0.9; metalness: 0.1">
       </a-cylinder>
@@ -246,7 +247,7 @@
         scale="0.8 0.8 0.8"
         cat-model="modelId: #model-cat-02; fallbackColor: #ffb366"
         cat-glow="originalColor: #ffb366"
-        cat-sound="soundId: #sound-cat-02">
+        cat-sound="soundId: #sound-cat-02; volume: 0.5">
       </a-entity>
 
 <a-entity 
@@ -259,7 +260,7 @@
     <a-entity id="station-03" position="0 0 -5">
       <a-cylinder 
         radius="0.55" 
-        height="1.37" 
+        height="1.26" 
         color="#2a2a3e"
         material="roughness: 0.9; metalness: 0.1">
       </a-cylinder>
@@ -281,7 +282,7 @@
         scale="0.8 0.8 0.8"
         cat-model="modelId: #model-cat-03; fallbackColor: #ffd966"
         cat-glow="originalColor: #ffd966"
-        cat-sound="soundId: #sound-cat-03">
+        cat-sound="soundId: #sound-cat-03; volume: 0.5">
       </a-entity>
 
 <a-entity 
@@ -290,11 +291,11 @@
       </a-entity>
     </a-entity>
 
-<!-- STATION 4 (Right +30°) -->
+<!-- STATION 4 (Right +30°) - QUIETER SOUND -->
     <a-entity id="station-04" position="2.6 0 -4.5">
       <a-cylinder 
         radius="0.55" 
-        height="1.37" 
+        height="1.26" 
         color="#2a2a3e"
         material="roughness: 0.9; metalness: 0.1">
       </a-cylinder>
@@ -316,7 +317,7 @@
         scale="0.8 0.8 0.8"
         cat-model="modelId: #model-cat-04; fallbackColor: #b8b8b8"
         cat-glow="originalColor: #b8b8b8"
-        cat-sound="soundId: #sound-cat-04">
+        cat-sound="soundId: #sound-cat-04; volume: 0.45">
       </a-entity>
 
 <a-entity 
@@ -325,11 +326,11 @@
       </a-entity>
     </a-entity>
 
-<!-- STATION 5 (Right +60°) -->
+<!-- STATION 5 (Right +60°) - QUIETER SOUND -->
     <a-entity id="station-05" position="4.33 0 -2.5">
       <a-cylinder 
         radius="0.55" 
-        height="1.37" 
+        height="1.26" 
         color="#2a2a3e"
         material="roughness: 0.9; metalness: 0.1">
       </a-cylinder>
@@ -351,7 +352,7 @@
         scale="0.8 0.8 0.8"
         cat-model="modelId: #model-cat-05; fallbackColor: #333333"
         cat-glow="originalColor: #333333"
-        cat-sound="soundId: #sound-cat-05">
+        cat-sound="soundId: #sound-cat-05; volume: 0.45">
       </a-entity>
 
 <a-entity 
@@ -381,7 +382,7 @@ let audioEnabled = false;
 
 // Hide loading screen when scene loads
     scene.addEventListener('loaded', function() {
-      console.log('✅ Scene v4 loaded with models and sounds');
+      console.log('✅ Scene v4 MVP loaded');
       loadingStatus.style.display = 'none';
 
 // Show audio prompt after brief delay
@@ -397,7 +398,6 @@ let audioEnabled = false;
     });
 
 // Also enable audio on first scene click (pointer lock)
-    const canvas = document.querySelector('a-scene').canvas;
     document.addEventListener('click', function enableOnFirstClick() {
       if (!audioEnabled) {
         enableAudio();
@@ -412,13 +412,12 @@ const bgMusic = document.getElementById('background-music');
 if (bgMusic) {
         bgMusic.volume = 0.1; // 10% volume
         bgMusic.loop = true;
-        
-        bgMusic.play().then(() => {
-          console.log('🎵 Background music started (10% volume, looped)');
+
+bgMusic.play().then(() => {
+          console.log('🎵 Background music started');
           audioEnabled = true;
         }).catch((error) => {
           console.warn('⚠️ Background music autoplay blocked:', error);
-          // Music will start on first user interaction
         });
       }
     }

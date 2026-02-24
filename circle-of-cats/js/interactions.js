@@ -227,7 +227,7 @@ AFRAME.registerComponent('cat-glow', {
     // Add softer temporary point light
     this.glowLight = document.createElement('a-light');
     this.glowLight.setAttribute('type', 'point');
-    this.glowLight.setAttribute('intensity', 1.5); // Reduced from 3 to 1.5
+    this.glowLight.setAttribute('intensity', 1.1); // Reduced from 3 to 1.1
     this.glowLight.setAttribute('distance', 3);
     this.glowLight.setAttribute('color', this.data.originalColor);
     this.glowLight.setAttribute('position', '0 0.5 0');
@@ -253,7 +253,7 @@ AFRAME.registerComponent('cat-glow', {
 
         // Apply SOFTER glow (reduced intensity)
         node.material.emissive = new THREE.Color(this.data.originalColor);
-        node.material.emissiveIntensity = 0.6; // Reduced from 1.5 to 0.6
+        node.material.emissiveIntensity = 0.3; // Reduced from 1.5 to 0.3
         node.material.needsUpdate = true;
       }
     });

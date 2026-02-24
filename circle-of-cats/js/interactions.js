@@ -1,58 +1,83 @@
 // ============================================
-// CUSTOM A-FRAME COMPONENTS
-// Circle of Cats - Interaction System (FIXED)
+// CIRCLE OF CATS - INTERACTION SYSTEM v4 MVP
+// With GLB Models + Sound Support + Softer Glow
 // ============================================
 
 // ============================================
-// 0. CAT MODEL LOADER (with fallback)
-// Replaces placeholder boxes with GLB models when loaded
+// 0. CAT MODEL LOADER COMPONENT
+// Loads GLB model with fallback to colored box
 // ============================================
 AFRAME.registerComponent('cat-model', {
   schema: {
-    src: { type: 'selector', default: null }
+    modelId: { type: 'selector', default: null },
+    fallbackColor: { type: 'color', default: '#ffffff' }
   },
 
   init: function() {
-    if (!this.data.src) return;
+    if (!this.data.modelId) {
+      this.createFallback();
+      return;
+    }
 
-    // Try to load GLB model
-    const modelSrc = this.data.src.getAttribute('src');
-    
-    // Check if asset loaded successfully
-    this.data.src.addEventListener('loaded', () => {
+    const modelSrc = this.data.modelId.getAttribute('src');
+
+    // Try to load the GLB model
+    this.data.modelId.addEventListener('loaded', () => {
       console.log('✅ Model loaded:', modelSrc);
-      // Replace placeholder with actual model
-      this.el.setAttribute('gltf-model', `#${this.data.src.id}`);
-      this.el.removeAttribute('geometry');
-      this.el.removeAttribute('material');
+      this.loadModel();
     });
 
-    this.data.src.addEventListener('error', () => {
-      console.warn('⚠️ Model failed, using placeholder:', modelSrc);
-      // Keep the placeholder box visible
+    this.data.modelId.addEventListener('error', () => {
+      console.warn('⚠️ Model failed, using fallback:', modelSrc);
+      this.createFallback();
+    });
+
+    // If model is already loaded
+    if (this.data.modelId.hasLoaded) {
+      this.loadModel();
+    }
+  },
+
+  loadModel: function() {
+    // Add the GLB model to this entity
+    this.el.setAttribute('gltf-model', `#${this.data.modelId.id}`);
+  },
+
+  createFallback: function() {
+    // Create colored box as fallback
+    console.log('📦 Using fallback box for:', this.el.id);
+    this.el.setAttribute('geometry', {
+      primitive: 'box',
+      width: 0.6,
+      height: 0.7,
+      depth: 0.5
+    });
+    this.el.setAttribute('material', {
+      color: this.data.fallbackColor,
+      roughness: 0.7,
+      metalness: 0
     });
   }
 });
 
 // ============================================
 // 1. PROXIMITY ZONE COMPONENT
-// Detects when user enters/leaves cat area
+// Detects when player is near a cat
 // ============================================
 AFRAME.registerComponent('proximity-zone', {
   schema: {
     catId: { type: 'string', default: '' },
-    radius: { type: 'number', default: 1.5 },
-    stationNum: { type: 'string', default: '01' }
+    radius: { type: 'number', default: 1.8 }
   },
 
   init: function() {
     this.camera = null;
     this.isInZone = false;
     this.checkInterval = null;
+    this.hint = document.getElementById('hint');
 
-    // Wait for scene to load
     this.el.sceneEl.addEventListener('loaded', () => {
-      this.camera = document.querySelector('[camera]');
+      this.camera = document.getElementById('player-camera');
       if (this.camera) {
         this.startChecking();
       }
@@ -60,10 +85,9 @@ AFRAME.registerComponent('proximity-zone', {
   },
 
   startChecking: function() {
-    // Check proximity every 150ms (less intensive)
     this.checkInterval = setInterval(() => {
       this.checkProximity();
-    }, 150);
+    }, 100);
   },
 
   checkProximity: function() {
@@ -74,11 +98,9 @@ AFRAME.registerComponent('proximity-zone', {
     const distance = cameraPos.distanceTo(zonePos);
 
     if (distance < this.data.radius && !this.isInZone) {
-      // ENTERED ZONE
       this.isInZone = true;
       this.onEnterZone();
     } else if (distance >= this.data.radius && this.isInZone) {
-      // LEFT ZONE
       this.isInZone = false;
       this.onLeaveZone();
     }
@@ -87,58 +109,26 @@ AFRAME.registerComponent('proximity-zone', {
   onEnterZone: function() {
     console.log('🐱 Entered zone:', this.data.catId);
 
-    // Show hint UI
-    this.showHint();
-
-    // Enable interaction
-    const controller = this.camera.components['interaction-controller'];
-    if (controller) {
-      controller.setActiveZone(this.el, this.data.stationNum);
+    if (this.hint) {
+      this.hint.classList.add('visible');
     }
 
-    // Emit event
-    this.el.emit('zone-entered', { catId: this.data.catId });
+    const controller = this.camera.components['interaction-controller'];
+    if (controller) {
+      controller.setActiveZone(this.data.catId);
+    }
   },
 
   onLeaveZone: function() {
     console.log('👋 Left zone:', this.data.catId);
 
-    // Hide hint UI
-    this.hideHint();
+    if (this.hint) {
+      this.hint.classList.remove('visible');
+    }
 
-    // Disable interaction
     const controller = this.camera.components['interaction-controller'];
     if (controller) {
       controller.clearActiveZone();
-    }
-
-    // Emit event
-    this.el.emit('zone-left', { catId: this.data.catId });
-  },
-
-  showHint: function() {
-    const hint = document.getElementById('hint-ui');
-    if (!hint) return;
-
-    const zonePos = this.el.object3D.getWorldPosition(new THREE.Vector3());
-    hint.setAttribute('position', {
-      x: zonePos.x,
-      y: zonePos.y + 2.2,
-      z: zonePos.z
-    });
-    hint.setAttribute('visible', true);
-
-    // Make hint face camera
-    if (this.camera) {
-      const cameraPos = this.camera.object3D.position;
-      hint.object3D.lookAt(cameraPos);
-    }
-  },
-
-  hideHint: function() {
-    const hint = document.getElementById('hint-ui');
-    if (hint) {
-      hint.setAttribute('visible', false);
     }
   },
 
@@ -150,69 +140,50 @@ AFRAME.registerComponent('proximity-zone', {
 });
 
 // ============================================
-// 2. INTERACTION CONTROLLER COMPONENT
-// Handles click and E key input
+// 2. INTERACTION CONTROLLER
+// Handles E key and click inputs
 // ============================================
 AFRAME.registerComponent('interaction-controller', {
   init: function() {
-    this.activeZone = null;
-    this.activeStationNum = null;
-    
+    this.activeCatId = null;
+
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onClick = this.onClick.bind(this);
 
-    // Listen for E key
     window.addEventListener('keydown', this.onKeyDown);
-
-    // Listen for mouse click
     window.addEventListener('click', this.onClick);
 
-    console.log('🎮 Interaction controller initialized');
+    console.log('🎮 Interaction controller ready');
   },
 
-  setActiveZone: function(zone, stationNum) {
-    this.activeZone = zone;
-    this.activeStationNum = stationNum;
+  setActiveZone: function(catId) {
+    this.activeCatId = catId;
   },
 
   clearActiveZone: function() {
-    this.activeZone = null;
-    this.activeStationNum = null;
+    this.activeCatId = null;
   },
 
   onKeyDown: function(event) {
-    // E key pressed
     if (event.key === 'e' || event.key === 'E') {
       this.triggerInteraction();
     }
   },
 
   onClick: function(event) {
-    // Trigger interaction on any click when in game mode
-    this.triggerInteraction();
+    if (document.pointerLockElement) {
+      this.triggerInteraction();
+    }
   },
 
   triggerInteraction: function() {
-    if (!this.activeZone || !this.activeStationNum) return;
+    if (!this.activeCatId) return;
 
-    const catId = this.activeZone.getAttribute('proximity-zone').catId;
-    console.log('✨ Petting cat:', catId);
+    console.log('✨ Petting cat:', this.activeCatId);
 
-    // Trigger sparkle effect
-    this.activateSparkles(this.activeStationNum);
-
-    // Emit interaction event
-    this.activeZone.emit('cat-petted', { catId: catId });
-  },
-
-  activateSparkles: function(stationNum) {
-    const sparklesId = `sparkles-${stationNum}`;
-    const sparklesEl = document.getElementById(sparklesId);
-
-    if (sparklesEl) {
-      sparklesEl.emit('sparkle-burst');
-    } else {
-      console.warn('Sparkles not found:', sparklesId);
+    const catEl = document.getElementById(this.activeCatId);
+    if (catEl) {
+      catEl.emit('pet');
     }
   },
 
@@ -223,33 +194,136 @@ AFRAME.registerComponent('interaction-controller', {
 });
 
 // ============================================
-// 3. SPARKLE EFFECT COMPONENT
-// Controls particle burst animation
+// 3. CAT GLOW COMPONENT (SOFTER VERSION)
+// Makes cat light up gently for 5 seconds
+// Model details remain visible
 // ============================================
-AFRAME.registerComponent('sparkle-effect', {
+AFRAME.registerComponent('cat-glow', {
+  schema: {
+    originalColor: { type: 'color', default: '#ffffff' },
+    glowDuration: { type: 'number', default: 5000 }
+  },
+
   init: function() {
-    this.el.addEventListener('sparkle-burst', () => {
-      this.triggerBurst();
+    this.isGlowing = false;
+    this.glowLight = null;
+
+    this.el.addEventListener('pet', () => {
+      if (!this.isGlowing) {
+        this.activateGlow();
+      }
     });
   },
 
-  triggerBurst: function() {
-    const particleSystem = this.el.components['particle-system'];
+  activateGlow: function() {
+    if (this.isGlowing) return;
 
-    if (particleSystem) {
-      console.log('✨ Sparkle burst!');
-      
-      // Enable particle system
-      this.el.setAttribute('particle-system', 'enabled', true);
+    this.isGlowing = true;
+    console.log('💡 Cat glowing (subtle):', this.el.id);
 
-      // Disable after 1 second
-      setTimeout(() => {
-        this.el.setAttribute('particle-system', 'enabled', false);
-      }, 1000);
-    } else {
-      console.warn('Particle system not found');
+    // Apply subtle emissive glow to all materials
+    this.applyGlowToModel();
+
+    // Add softer temporary point light
+    this.glowLight = document.createElement('a-light');
+    this.glowLight.setAttribute('type', 'point');
+    this.glowLight.setAttribute('intensity', 1.5); // Reduced from 3 to 1.5
+    this.glowLight.setAttribute('distance', 3);
+    this.glowLight.setAttribute('color', this.data.originalColor);
+    this.glowLight.setAttribute('position', '0 0.5 0');
+    this.el.appendChild(this.glowLight);
+
+    // Restore after 5 seconds
+    setTimeout(() => {
+      this.deactivateGlow();
+    }, this.data.glowDuration);
+  },
+
+  applyGlowToModel: function() {
+    const mesh = this.el.object3D;
+
+    // Traverse all meshes in the model
+    mesh.traverse((node) => {
+      if (node.isMesh && node.material) {
+        // Store original emissive if not already stored
+        if (!node.userData.originalEmissive) {
+          node.userData.originalEmissive = node.material.emissive ? node.material.emissive.clone() : new THREE.Color(0x000000);
+          node.userData.originalEmissiveIntensity = node.material.emissiveIntensity || 0;
+        }
+
+        // Apply SOFTER glow (reduced intensity)
+        node.material.emissive = new THREE.Color(this.data.originalColor);
+        node.material.emissiveIntensity = 0.6; // Reduced from 1.5 to 0.6
+        node.material.needsUpdate = true;
+      }
+    });
+  },
+
+  deactivateGlow: function() {
+    console.log('💤 Cat glow ended:', this.el.id);
+
+    // Restore original materials
+    const mesh = this.el.object3D;
+    mesh.traverse((node) => {
+      if (node.isMesh && node.material && node.userData.originalEmissive) {
+        node.material.emissive = node.userData.originalEmissive;
+        node.material.emissiveIntensity = node.userData.originalEmissiveIntensity;
+        node.material.needsUpdate = true;
+      }
+    });
+
+    // Remove temporary light
+    if (this.glowLight) {
+      this.glowLight.remove();
+      this.glowLight = null;
+    }
+
+    this.isGlowing = false;
+  }
+});
+
+// ============================================
+// 4. CAT SOUND COMPONENT
+// Plays sound when cat is petted (with custom volume)
+// ============================================
+AFRAME.registerComponent('cat-sound', {
+  schema: {
+    soundId: { type: 'selector', default: null },
+    volume: { type: 'number', default: 0.5 } // Configurable per cat
+  },
+
+  init: function() {
+    this.soundElement = null;
+
+    // Get the audio element
+    if (this.data.soundId) {
+      this.soundElement = this.data.soundId;
+      if (this.soundElement) {
+        this.soundElement.volume = this.data.volume;
+      }
+    }
+
+    // Listen for pet event
+    this.el.addEventListener('pet', () => {
+      this.playSound();
+    });
+  },
+
+  playSound: function() {
+    if (!this.soundElement) {
+      console.warn('⚠️ No sound loaded for:', this.el.id);
+      return;
+    }
+
+    // Reset and play sound
+    try {
+      this.soundElement.currentTime = 0;
+      this.soundElement.play();
+      console.log('🔊 Playing sound for:', this.el.id, '| Volume:', this.data.volume);
+    } catch (error) {
+      console.warn('⚠️ Sound playback failed:', error);
     }
   }
 });
 
-console.log('✅ Circle of Cats - Interaction System Loaded');
+console.log('✅ Circle of Cats - Interaction System v4 MVP (Final) Loaded');

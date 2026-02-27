@@ -1,7 +1,3 @@
-**Here's a complete README.md content for your project:**
-
----
-
 ```markdown
 # 🐱 Circle of Cats
 
@@ -68,12 +64,6 @@ Audio files:
 - **Framework** - [A-Frame](https://aframe.io) by Mozilla
 - **3D Engine** - [Three.js](https://threejs.org)
 - **Sound Design** - [ElevenLabs](https://elevenlabs.io/app/home)
-
----
-
-## 📧 Contact
-
-For questions or feedback, reach out at [your-email@example.com]
 
 ---
 
